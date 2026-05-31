@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="theme-color" content="#0c1015" />
+<title>Fuel Calc</title>
+<style>
+  :root{
+    --bg:#0c1015;
+    --bg-2:#11161d;
+    --panel:#161c25;
+    --border:#222b38;
+    --border-strong:#2e3a4c;
+    --text:#dde4ee;
+    --text-dim:#8b97a8;
+    --text-faint:#5a6678;
+    --accent:#ffb020;
+    --accent-2:#3aa0ff;
+    --good:#5cd38a;
+    --bad:#ff5b5b;
+    --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans:'Inter', system-ui, -apple-system, sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    font-size:14px;
+    -webkit-text-size-adjust:100%;
+    min-height:100dvh;
+  }
+
+  /* Header */
+  .header-strip{
+    background:#080b10;
+    border-bottom:1px solid var(--border);
+    padding:10px 16px;
+    padding-top:calc(10px + env(safe-area-inset-top));
+    display:flex;align-items:center;gap:10px;
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--text-dim);
+    letter-spacing:.1em;
+    position:sticky;top:0;z-index:10;
+  }
+  .header-strip .brand{color:var(--accent);font-weight:700;letter-spacing:.18em}
+  .header-strip .sep{color:var(--text-faint)}
+
+  #fuel-calc{
+    font-family:var(--sans);
+    color:var(--text);
+    background:var(--panel);
+    padding:14px 16px;
+    padding-bottom:calc(24px + env(safe-area-inset-bottom));
+    max-width:520px;
+    margin:0 auto;
+    min-height:100dvh;
+  }
+  #fuel-calc *{box-sizing:border-box}
+  .fc-card{
+    background:var(--bg-2);
+    border:1px solid var(--border);
+    border-radius:3px;
+    padding:12px 14px;
+    margin-bottom:12px;
+  }
+  .fc-card-title{
+    font-size:10px;color:var(--text-dim);
+    letter-spacing:.18em;text-transform:uppercase;
+    font-weight:600;margin-bottom:10px;
+  }
+  .fc-hint{font-size:11px;color:var(--text-faint);margin:-4px 0 10px}
+  .fc-row-density{
+    display:flex;align-items:center;justify-content:space-between;
+    background:#1a1408;border:1px solid #3a2e10;
+    border-radius:3px;padding:8px 12px;margin-bottom:12px;
+  }
+  .fc-row-density span{
+    font-size:10px;color:var(--accent);letter-spacing:.18em;
+    text-transform:uppercase;font-weight:600;
+  }
+  .fc-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .fc-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:2px}
+  .fc-field-label{
+    display:block;font-size:9px;color:var(--text-dim);
+    letter-spacing:.15em;text-transform:uppercase;
+    font-weight:600;margin-bottom:4px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .fc-input{
+    width:100%;background:var(--bg);
+    border:1px solid var(--border-strong);
+    border-radius:3px;padding:9px 10px;font-size:16px;
+    color:var(--text);font-family:var(--mono);
+    text-align:right;font-weight:500;outline:none;
+    transition:border-color .12s,box-shadow .12s;
+  }
+  .fc-input:focus{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+  .fc-input.fc-accent{color:var(--accent)}
+  .fc-input.fc-blue{color:var(--accent-2)}
+  .fc-input.fc-density{
+    width:100px;padding:6px 8px;font-size:14px;
+    color:var(--accent);border-color:#3a2e10;background:var(--bg);
+  }
+  .fc-conv-summary{
+    margin-top:12px;padding:8px 12px;
+    background:var(--bg);border:1px solid var(--border);border-radius:3px;
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;
+  }
+  .fc-conv-summary .fc-cell{text-align:center;min-width:56px}
+  .fc-conv-summary .fc-cell .v{font-size:16px;font-weight:600;color:var(--text);font-family:var(--mono)}
+  .fc-conv-summary .fc-cell .u{font-size:9px;color:var(--text-faint);margin-top:2px;letter-spacing:.1em;text-transform:uppercase}
+  .fc-empty-line{color:var(--text-faint);font-size:11px;text-align:center;padding:8px 0;letter-spacing:.03em}
+  .fc-reserve-buttons{display:flex;gap:4px}
+  .fc-reserve-buttons button{
+    flex:1;padding:11px 0;border-radius:3px;
+    border:1px solid var(--border-strong);background:var(--bg-2);
+    color:var(--text-dim);font-family:var(--sans);
+    font-size:12px;font-weight:600;letter-spacing:.08em;
+    text-transform:uppercase;cursor:pointer;transition:all .12s;
+  }
+  .fc-reserve-buttons button:hover{border-color:var(--accent);color:var(--accent)}
+  .fc-reserve-buttons button.active{
+    background:var(--accent);border-color:var(--accent);color:#0c1015;
+  }
+  .fc-readonly{
+    padding:9px 10px;font-size:14px;
+    background:var(--bg);border:1px solid var(--border-strong);
+    border-radius:3px;display:flex;align-items:center;justify-content:flex-end;
+    min-height:38px;font-family:var(--mono);
+  }
+  .fc-readonly.has-value{color:var(--text);font-weight:500}
+  .fc-readonly.empty{color:var(--text-faint);font-size:11px;font-family:var(--sans);letter-spacing:.03em}
+  .fc-minutes-result{
+    background:#1a1408;border:1px solid #3a2e10;
+    border-radius:3px;padding:10px 12px;margin-top:10px;
+  }
+  .fc-minutes-result .head{
+    font-size:10px;color:var(--accent);letter-spacing:.18em;
+    font-weight:700;margin-bottom:10px;text-transform:uppercase;
+  }
+  .fc-minutes-result .cell{text-align:center;padding:2px;min-width:0;overflow:hidden}
+  .fc-minutes-result .cell .v{
+    font-size:15px;font-weight:600;color:var(--accent);
+    font-family:var(--mono);line-height:1.1;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .fc-minutes-result .cell .l{
+    font-size:8px;color:var(--text-faint);margin-top:4px;
+    letter-spacing:.12em;text-transform:uppercase;
+  }
+
+  /* Required-fuel hero readout */
+  .fc-required{
+    background:var(--bg);border:1px solid var(--border);border-radius:3px;
+    padding:14px 16px;
+  }
+  .fc-required .rows{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+  .fc-required .line{
+    display:flex;justify-content:space-between;align-items:baseline;
+    font-family:var(--mono);font-size:13px;color:var(--text-dim);
+  }
+  .fc-required .line .lbl{color:var(--text-faint);letter-spacing:.06em}
+  .fc-required .line .val{color:var(--text);font-weight:500}
+  .fc-required .total{
+    background:#1a1408;border:1px solid #3a2e10;border-radius:3px;
+    padding:12px 14px;text-align:center;
+  }
+  .fc-required .total .big{
+    font-size:30px;font-weight:700;color:var(--accent);
+    font-family:var(--mono);line-height:1;
+  }
+  .fc-required .total .big .unit{font-size:15px;font-weight:500;margin-left:4px;color:var(--accent)}
+  .fc-required .total .lbl{
+    font-size:9px;color:var(--accent);letter-spacing:.2em;
+    text-transform:uppercase;margin-bottom:8px;font-weight:700;
+  }
+  .fc-required .total .alt{
+    margin-top:10px;display:flex;justify-content:center;gap:18px;
+    font-family:var(--mono);font-size:12px;color:var(--text-dim);
+  }
+  .fc-required .total .alt span small{color:var(--text-faint);font-size:9px;margin-left:2px;letter-spacing:.1em}
+</style>
+</head>
+<body>
+
+<div class="header-strip">
+  <span class="brand">NM·PLOTTER</span>
+  <span class="sep">/</span>
+  <span>FUEL CALC</span>
+</div>
+
+<section id="fuel-calc">
+  <!-- Density -->
+  <div class="fc-row-density">
+    <span>Jet A-1 Density · kg/L</span>
+    <input id="fc-density" class="fc-input fc-density" type="number" step="0.001" value="0.800" inputmode="decimal">
+  </div>
+
+  <!-- ── 1. INPUTS ─────────────────────────────────── -->
+  <div class="fc-card">
+    <div class="fc-card-title">Flight Inputs</div>
+    <div class="fc-grid-2" style="margin-bottom:12px;">
+      <div>
+        <label class="fc-field-label">Trip · NM</label>
+        <input id="fc-trip" class="fc-input fc-blue" type="number" placeholder="270" inputmode="decimal">
+      </div>
+      <div>
+        <label class="fc-field-label">TAS · kt</label>
+        <input id="fc-tas" class="fc-input" type="number" placeholder="130" inputmode="decimal">
+      </div>
+      <div>
+        <label class="fc-field-label">Burn · kg/hr</label>
+        <input id="fc-burn" class="fc-input" type="number" placeholder="176" inputmode="decimal">
+      </div>
+    </div>
+    <label class="fc-field-label">Reserve · min</label>
+    <div id="fc-reserve-buttons" class="fc-reserve-buttons"></div>
+  </div>
+
+  <!-- ── 2. REQUIRED FUEL (the answer) ─────────────── -->
+  <div class="fc-card" id="fc-required-card">
+    <div class="fc-card-title">Fuel Required to Load</div>
+    <div id="fc-required-output">
+      <div class="fc-empty-line">Enter trip distance, TAS and burn rate</div>
+    </div>
+  </div>
+
+  <!-- ── 3. UTILITIES ─────────────────── -->
+  <div class="fc-card">
+    <div class="fc-card-title">Minutes → Fuel Burn</div>
+    <div class="fc-grid-2" style="margin-bottom:10px;">
+      <div>
+        <label class="fc-field-label">Minutes</label>
+        <input id="fc-mins" class="fc-input fc-accent" type="number" placeholder="45" inputmode="decimal">
+      </div>
+      <div>
+        <label class="fc-field-label">Burn · kg/hr</label>
+        <div id="fc-burn-mirror" class="fc-readonly empty">enter burn above</div>
+      </div>
+    </div>
+    <div id="fc-minutes-output"></div>
+  </div>
+
+  <div class="fc-card">
+    <div class="fc-card-title">Fuel Unit Converter</div>
+    <div class="fc-hint">Edit any field — others update instantly</div>
+    <div class="fc-grid-2">
+      <div>
+        <label class="fc-field-label">Litres</label>
+        <input data-fuel="L" class="fc-input fc-blue" type="number" placeholder="0.0" inputmode="decimal">
+      </div>
+      <div>
+        <label class="fc-field-label">US Gallons</label>
+        <input data-fuel="USG" class="fc-input fc-blue" type="number" placeholder="0.00" inputmode="decimal">
+      </div>
+      <div>
+        <label class="fc-field-label">Kilograms</label>
+        <input data-fuel="kg" class="fc-input fc-blue" type="number" placeholder="0.0" inputmode="decimal">
+      </div>
+      <div>
+        <label class="fc-field-label">Pounds</label>
+        <input data-fuel="lbs" class="fc-input fc-blue" type="number" placeholder="0.0" inputmode="decimal">
+      </div>
+    </div>
+    <div id="fc-conv-summary" class="fc-conv-summary" style="display:none;"></div>
+  </div>
+</section>
+
+<script>
+/* ============================================================
+   FUEL CALCULATOR — standalone offline version
+   ============================================================ */
+(function () {
+  const fcState = { density: 0.800, res: 15 };
+
+  const $  = id => document.getElementById(id);
+  const num = el => { const v = parseFloat(el.value); return isNaN(v) ? null : v; };
+  const fmt = (n, d = 1) => Number(n).toFixed(d);
+
+  /* ── Unit converter ────────────────────────────────────────── */
+  const fuelInputs = document.querySelectorAll('#fuel-calc input[data-fuel]');
+  const summary = $('fc-conv-summary');
+
+  function updateFuel(field, raw) {
+    const v = parseFloat(raw);
+    if (raw === '' || isNaN(v)) {
+      fuelInputs.forEach(i => { if (i.dataset.fuel !== field) i.value = ''; });
+      summary.style.display = 'none';
+      return;
+    }
+    let L;
+    if (field === 'L')   L = v;
+    if (field === 'USG') L = v * 3.78541;
+    if (field === 'kg')  L = v / fcState.density;
+    if (field === 'lbs') L = (v * 0.453592) / fcState.density;
+
+    const vals = {
+      L:   field === 'L'   ? raw : fmt(L, 1),
+      USG: field === 'USG' ? raw : fmt(L / 3.78541, 2),
+      kg:  field === 'kg'  ? raw : fmt(L * fcState.density, 1),
+      lbs: field === 'lbs' ? raw : fmt((L * fcState.density) / 0.453592, 1),
+    };
+    fuelInputs.forEach(i => {
+      if (i.dataset.fuel !== field) i.value = vals[i.dataset.fuel];
+    });
+    summary.innerHTML = `
+      <div class="fc-cell"><div class="v">${(+vals.L).toLocaleString(undefined,{maximumFractionDigits:2})}</div><div class="u">L</div></div>
+      <div class="fc-cell"><div class="v">${(+vals.USG).toLocaleString(undefined,{maximumFractionDigits:2})}</div><div class="u">USG</div></div>
+      <div class="fc-cell"><div class="v">${(+vals.kg).toLocaleString(undefined,{maximumFractionDigits:2})}</div><div class="u">kg</div></div>
+      <div class="fc-cell"><div class="v">${(+vals.lbs).toLocaleString(undefined,{maximumFractionDigits:2})}</div><div class="u">lbs</div></div>`;
+    summary.style.display = 'flex';
+  }
+  fuelInputs.forEach(i => i.addEventListener('input', e => updateFuel(e.target.dataset.fuel, e.target.value)));
+
+  /* ── Density change clears converter ──────────────────────── */
+  $('fc-density').addEventListener('input', e => {
+    fcState.density = parseFloat(e.target.value) || 0.800;
+    fuelInputs.forEach(i => i.value = '');
+    summary.style.display = 'none';
+    renderAll();
+  });
+
+  /* ── Required Fuel ── */
+  function renderRequired() {
+    const trip = num($('fc-trip')), tas = num($('fc-tas')), burn = num($('fc-burn'));
+    const out = $('fc-required-output');
+
+    if(!trip || !tas || !burn || trip <= 0 || tas <= 0 || burn <= 0){
+      const missing = [];
+      if(!trip || trip <= 0) missing.push('Trip distance');
+      if(!tas  || tas  <= 0) missing.push('TAS');
+      if(!burn || burn <= 0) missing.push('Burn rate');
+      out.innerHTML = `<div class="fc-empty-line">Enter ${missing.join(', ')}</div>`;
+      return;
+    }
+
+    const tripHr = trip / tas;
+    const tripFuelKg = tripHr * burn;
+    const reserveKg = burn * (fcState.res / 60);
+    const totalKg = tripFuelKg + reserveKg;
+    const totalL  = totalKg / fcState.density;
+    const totalUSG = totalL / 3.78541;
+    const totalLbs = totalKg / 0.453592;
+
+    const tripH = Math.floor(tripHr);
+    const tripM = Math.round((tripHr - tripH) * 60);
+    const reserveText = fcState.res === 0 ? 'NIL' : `${fmt(reserveKg,1)} kg (${fcState.res} min)`;
+
+    out.innerHTML = `
+      <div class="fc-required">
+        <div class="rows">
+          <div class="line"><span class="lbl">Flight time</span><span class="val">${tripH}h ${String(tripM).padStart(2,'0')}m</span></div>
+          <div class="line"><span class="lbl">Trip fuel</span><span class="val">${fmt(tripFuelKg,1)} kg</span></div>
+          <div class="line"><span class="lbl">Reserve</span><span class="val">${reserveText}</span></div>
+        </div>
+        <div class="total">
+          <div class="lbl">Total to Load</div>
+          <div class="big">${fmt(totalKg,0)}<span class="unit">kg</span></div>
+          <div class="alt">
+            <span>${fmt(totalL,0)}<small>L</small></span>
+            <span>${fmt(totalUSG,1)}<small>USG</small></span>
+            <span>${fmt(totalLbs,0)}<small>lbs</small></span>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  ['fc-burn','fc-tas','fc-trip'].forEach(id => $(id).addEventListener('input', renderAll));
+
+  /* ── Minutes → Fuel ── */
+  function renderMinutes() {
+    const b = num($('fc-burn')), m = num($('fc-mins'));
+    const mirror = $('fc-burn-mirror'), out = $('fc-minutes-output');
+
+    if (b > 0) {
+      mirror.className = 'fc-readonly has-value';
+      mirror.textContent = fmt(b, 0) + ' kg/hr';
+    } else {
+      mirror.className = 'fc-readonly empty';
+      mirror.textContent = 'enter burn above';
+    }
+
+    if (!(b > 0) || !(m > 0)) {
+      out.innerHTML = `<div class="fc-empty-line">${
+        !(b > 0) ? 'Enter burn rate in main inputs' : 'Enter minutes to calculate'
+      }</div>`;
+      return;
+    }
+    const L = b * (m / 60) / fcState.density;
+    const kg = b * (m / 60);
+    const USG = L / 3.78541;
+    const lbs = kg / 0.453592;
+    out.innerHTML = `
+      <div class="fc-minutes-result">
+        <div class="head">${m} minutes of fuel</div>
+        <div class="fc-grid-4">
+          <div class="cell"><div class="v">${fmt(kg,1)}</div><div class="l">kg</div></div>
+          <div class="cell"><div class="v">${fmt(L,1)}</div><div class="l">Litres</div></div>
+          <div class="cell"><div class="v">${fmt(USG,2)}</div><div class="l">US Gal</div></div>
+          <div class="cell"><div class="v">${fmt(lbs,1)}</div><div class="l">lbs</div></div>
+        </div>
+      </div>`;
+  }
+  $('fc-mins').addEventListener('input', renderAll);
+
+  /* ── Reserve buttons ── */
+  const RESERVE_OPTIONS = [0, 15, 20, 30, 45, 60];
+  const btnHost = $('fc-reserve-buttons');
+  RESERVE_OPTIONS.forEach(r => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = r === 0 ? 'NIL' : r;
+    if (r === fcState.res) b.classList.add('active');
+    b.addEventListener('click', () => {
+      fcState.res = r;
+      btnHost.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+      renderAll();
+    });
+    btnHost.appendChild(b);
+  });
+
+  /* ── Master render ── */
+  function renderAll() {
+    renderRequired();
+    renderMinutes();
+  }
+  renderAll();
+})();
+</script>
+
+</body>
+</html>
