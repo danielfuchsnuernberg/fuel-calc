@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!--
+  ============================================================
+  PROJECT:   Pilot Tools Suite
+  FILE:      quick-fuel-check.html  (standalone)
+  VERSION:   2026-06-05
+  NOTES:     The Suite's "Quick Fuel Check" popover, pulled out into
+             its own self-contained file. Trimmed feature set:
+             density + unit converter + Trip -> Required Fuel.
+             (The fuller standalone is fuel-calc.html, which also has
+             the Minutes -> Fuel utility.) Amber accent, suite palette.
+  ============================================================
+-->
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Quick Fuel Check</title>
+
+<meta name="application-name" content="Quick Fuel Check" />
+<meta name="apple-mobile-web-app-title" content="Quick Fuel Check" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="theme-color" content="#0a0e13" />
+
+<!-- amber fuel-drop icon on the suite's dark tile, inline so the file stays self-contained -->
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20180%20180'%3E%3Crect%20width='180'%20height='180'%20rx='40'%20fill='%230c1015'/%3E%3Cpath%20d='M90%2038%20C90%2038%20128%2090%20128%20118%20a38%2038%200%201%201-76%200%20C52%2090%2090%2038%2090%2038%20Z'%20fill='none'%20stroke='%23ffb020'%20stroke-width='9'/%3E%3Cpath%20d='M104%20104%20a22%2022%200%200%201-14%2020'%20fill='none'%20stroke='%23ffb020'%20stroke-width='7'%20stroke-linecap='round'/%3E%3C/svg%3E" />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20180%20180'%3E%3Crect%20width='180'%20height='180'%20rx='40'%20fill='%230c1015'/%3E%3Cpath%20d='M90%2038%20C90%2038%20128%2090%20128%20118%20a38%2038%200%201%201-76%200%20C52%2090%2090%2038%2090%2038%20Z'%20fill='none'%20stroke='%23ffb020'%20stroke-width='9'/%3E%3Cpath%20d='M104%20104%20a22%2022%200%200%201-14%2020'%20fill='none'%20stroke='%23ffb020'%20stroke-width='7'%20stroke-linecap='round'/%3E%3C/svg%3E" />
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Quick%20Fuel%20Check%22%2C%22short_name%22%3A%22Quick%20Fuel%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230a0e13%22%2C%22theme_color%22%3A%22%230a0e13%22%2C%22start_url%22%3A%22.%22%7D" />
+
+<style>
+  :root{
+    --bg-app:#0a0e13; --bg-panel:#0d1219; --bg-field:#0f141b;
+    --border-structural:#1a2330; --border-component:#2a3744;
+    --accent-amber:#ffb020; --accent-green:#34d399; --accent-red:#f0506e;
+    --text-primary:#dce6f0; --text-secondary:#b8c5d1; --text-muted:#7d93a8;
+    --text-faint:#5f7186;
+    --font-ui:ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg-app);color:var(--text-primary);font-family:var(--font-ui);
+    font-size:14px;-webkit-text-size-adjust:100%;min-height:100dvh}
+
+  .header-strip{background:#080b10;border-bottom:1px solid var(--border-structural);
+    padding:10px 16px;padding-top:calc(10px + env(safe-area-inset-top));
+    display:flex;align-items:center;gap:10px;font-size:11px;font-weight:600;
+    color:var(--text-muted);letter-spacing:.14em;text-transform:uppercase;
+    position:sticky;top:0;z-index:10}
+  .header-strip .brand{color:var(--accent-amber);font-weight:700;letter-spacing:.18em}
+  .header-strip .sep{color:var(--text-faint)}
+
+  .wrap{max-width:440px;margin:0 auto;padding:16px;
+    padding-bottom:calc(28px + env(safe-area-inset-bottom))}
+
+  .fp-density{display:flex;align-items:center;justify-content:space-between;
+    background:#1a1408;border:1px solid #3a2e10;border-radius:6px;padding:8px 12px;margin-bottom:16px}
+  .fp-density-label{font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;color:var(--accent-amber)}
+  .fp-input{width:100%;background:var(--bg-app);border:1px solid var(--border-component);border-radius:6px;
+    padding:8px 10px;font-size:13px;color:var(--text-primary);font-variant-numeric:tabular-nums;
+    text-align:right;outline:none;transition:border-color .12s,box-shadow .12s}
+  .fp-input:focus{border-color:var(--accent-amber);box-shadow:0 0 0 1px var(--accent-amber)}
+  .fp-density-input{width:104px;padding:5px 8px;font-size:13px;color:var(--accent-amber);border-color:#3a2e10}
+  .fp-amber{color:var(--accent-amber)}
+
+  .card{background:var(--bg-panel);border:1px solid var(--border-structural);
+    border-radius:8px;padding:14px;margin-bottom:14px}
+  .fp-section-label{font-size:10px;letter-spacing:.16em;text-transform:uppercase;font-weight:600;
+    color:var(--text-secondary);margin-bottom:10px}
+  .fp-label{display:block;font-size:9px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;
+    color:var(--text-muted);margin-bottom:4px}
+  .fp-grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .fp-grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+
+  .fp-reserve-label{margin-bottom:6px}
+  .fp-reserve{display:flex;gap:4px}
+  .fp-reserve button{flex:1;padding:8px 0;border-radius:6px;border:1px solid var(--border-component);
+    background:var(--bg-field);color:var(--text-secondary);font-size:11px;font-weight:600;
+    cursor:pointer;transition:all .12s;font-family:var(--font-ui)}
+  .fp-reserve button:hover{border-color:var(--accent-amber);color:var(--accent-amber)}
+  .fp-reserve button.active{background:var(--accent-amber);border-color:var(--accent-amber);color:var(--bg-app)}
+
+  .fp-total{margin-top:14px;background:var(--bg-field);border:1px solid var(--border-component);
+    border-radius:8px;padding:14px 16px;text-align:center}
+  .fp-total-rows{display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-bottom:4px}
+  .fp-total-big{font-size:30px;font-weight:700;color:var(--accent-amber);font-variant-numeric:tabular-nums;margin-top:8px}
+  .fp-total-unit{font-size:14px;font-weight:500;margin-left:4px}
+  .fp-total-alt{font-size:11px;color:var(--text-muted);margin-top:4px;font-variant-numeric:tabular-nums}
+  .fp-empty{margin-top:12px;text-align:center;font-size:11px;color:var(--text-faint);padding:10px 0}
+
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-track{background:var(--bg-app)}
+  ::-webkit-scrollbar-thumb{background:var(--border-component);border-radius:4px}
+
+  /* phone: stop iOS auto-zoom on focus */
+  @media (max-width:600px){
+    .fp-input{font-size:16px;padding:10px}
+    .fp-density-input{font-size:15px;width:112px}
+    .fp-reserve button{padding:11px 0;font-size:12px}
+  }
+</style>
+</head>
+<body>
+
+<div class="header-strip">
+  <span class="brand">PILOT TOOLS</span>
+  <span class="sep">/</span>
+  <span>Quick Fuel Check</span>
+</div>
+
+<div class="wrap">
+  <div class="fp-density">
+    <span class="fp-density-label">Jet A-1 · kg/L</span>
+    <input id="fp-density" class="fp-input fp-density-input" type="number" step="0.001" value="0.800" inputmode="decimal">
+  </div>
+
+  <div class="card">
+    <div class="fp-section-label">Unit Converter</div>
+    <div class="fp-grid2">
+      <div><label class="fp-label">Litres</label><input data-fuel="L" class="fp-input fp-amber" type="number" inputmode="decimal"></div>
+      <div><label class="fp-label">US Gal</label><input data-fuel="USG" class="fp-input fp-amber" type="number" inputmode="decimal"></div>
+      <div><label class="fp-label">Kilograms</label><input data-fuel="kg" class="fp-input fp-amber" type="number" inputmode="decimal"></div>
+      <div><label class="fp-label">Pounds</label><input data-fuel="lbs" class="fp-input fp-amber" type="number" inputmode="decimal"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="fp-section-label">Trip → Required Fuel</div>
+    <div class="fp-grid3">
+      <div><label class="fp-label">Trip · NM</label><input id="fp-trip" class="fp-input fp-amber" type="number" inputmode="decimal" placeholder="270"></div>
+      <div><label class="fp-label">TAS · kt</label><input id="fp-tas" class="fp-input fp-amber" type="number" inputmode="decimal" placeholder="130"></div>
+      <div><label class="fp-label">Burn · kg/hr</label><input id="fp-burn" class="fp-input fp-amber" type="number" inputmode="decimal" placeholder="176"></div>
+    </div>
+    <label class="fp-label fp-reserve-label">Reserve · min</label>
+    <div class="fp-reserve" id="fp-reserve"></div>
+    <div id="fp-req"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const FUEL = { density: 0.800, res: 15 };
+  const L_PER_USG = 3.78541, KG_PER_LB = 0.453592;
+  const ffmt = (n, d = 1) => Number(n).toFixed(d);
+
+  /* ── Unit converter ─────────────────────────────────────── */
+  const fuelInputs = document.querySelectorAll('input[data-fuel]');
+  function fuelConvert(field, raw) {
+    const v = parseFloat(raw);
+    if (raw === '' || isNaN(v)) { fuelInputs.forEach(i => { if (i.dataset.fuel !== field) i.value = ''; }); return; }
+    let L;
+    if (field === 'L')   L = v;
+    if (field === 'USG') L = v * L_PER_USG;
+    if (field === 'kg')  L = v / FUEL.density;
+    if (field === 'lbs') L = (v * KG_PER_LB) / FUEL.density;
+    const vals = {
+      L:   field === 'L'   ? raw : ffmt(L, 1),
+      USG: field === 'USG' ? raw : ffmt(L / L_PER_USG, 2),
+      kg:  field === 'kg'  ? raw : ffmt(L * FUEL.density, 1),
+      lbs: field === 'lbs' ? raw : ffmt((L * FUEL.density) / KG_PER_LB, 1),
+    };
+    fuelInputs.forEach(i => { if (i.dataset.fuel !== field) i.value = vals[i.dataset.fuel]; });
+  }
+  fuelInputs.forEach(i => i.addEventListener('input', e => fuelConvert(e.target.dataset.fuel, e.target.value)));
+
+  /* ── Density change clears converter ────────────────────── */
+  document.getElementById('fp-density').addEventListener('input', e => {
+    FUEL.density = parseFloat(e.target.value) || 0.800;
+    fuelInputs.forEach(i => i.value = '');
+    renderReq();
+  });
+
+  /* ── Trip → Required fuel ───────────────────────────────── */
+  function renderReq() {
+    const t = parseFloat(document.getElementById('fp-trip').value),
+          v = parseFloat(document.getElementById('fp-tas').value),
+          b = parseFloat(document.getElementById('fp-burn').value);
+    const out = document.getElementById('fp-req');
+    if (!(t > 0 && v > 0 && b > 0)) { out.innerHTML = '<div class="fp-empty">Enter trip, TAS and burn</div>'; return; }
+    const tripHr = t / v, tripFuel = tripHr * b, reserveKg = b * (FUEL.res / 60), total = tripFuel + reserveKg;
+    const h = Math.floor(tripHr), m = Math.round((tripHr - h) * 60);
+    out.innerHTML = '<div class="fp-total">'
+      + '<div class="fp-total-rows"><span>Flight time</span><span>' + h + 'h ' + String(m).padStart(2, '0') + 'm</span></div>'
+      + '<div class="fp-total-rows"><span>Reserve</span><span>' + (FUEL.res === 0 ? 'NIL' : ffmt(reserveKg, 1) + ' kg') + '</span></div>'
+      + '<div class="fp-total-big">' + ffmt(total, 0) + '<span class="fp-total-unit">kg</span></div>'
+      + '<div class="fp-total-alt">' + ffmt(total / FUEL.density, 0) + ' L · ' + ffmt((total / FUEL.density) / L_PER_USG, 1) + ' USG</div></div>';
+  }
+  ['fp-trip', 'fp-tas', 'fp-burn'].forEach(id => document.getElementById(id).addEventListener('input', renderReq));
+
+  /* ── Reserve buttons ────────────────────────────────────── */
+  const RES_OPTS = [0, 15, 20, 30, 45, 60];
+  const resHost = document.getElementById('fp-reserve');
+  RES_OPTS.forEach(r => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = r === 0 ? 'NIL' : r;
+    if (r === FUEL.res) btn.classList.add('active');
+    btn.addEventListener('click', () => {
+      FUEL.res = r;
+      resHost.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === btn));
+      renderReq();
+    });
+    resHost.appendChild(btn);
+  });
+
+  renderReq();
+})();
+</script>
+
+</body>
+</html>
